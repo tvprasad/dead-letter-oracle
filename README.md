@@ -144,7 +144,7 @@ governance/      Gatekeeper — multi-factor replay evaluation
 observability/   BlackBox — structured reasoning trace
 agentgateway/    AgentGateway config (MCP proxy, web UI, playground)
 data/            Sample DLQ message (local, no Kafka)
-adr/             Architecture Decision Records (ADR-001–007)
+adr/             Architecture Decision Records (ADR-001 through ADR-008)
 tests/           22 unit + integration tests
 docs/            Architecture poster (poster.png)
 ```
