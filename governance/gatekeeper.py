@@ -45,17 +45,11 @@ def evaluate(
     # ── Factor 2: replay simulation confidence ────────────────
     sim_reason = simulation.get("reason", "")
     if confidence >= CONFIDENCE_ALLOW:
-        reasons.append(
-            f"Replay simulation confidence is high ({confidence}) — {sim_reason}"
-        )
+        reasons.append(f"Replay simulation confidence is high ({confidence}) — {sim_reason}")
     elif confidence >= CONFIDENCE_WARN:
-        reasons.append(
-            f"Replay simulation confidence is marginal ({confidence}) — {sim_reason}"
-        )
+        reasons.append(f"Replay simulation confidence is marginal ({confidence}) — {sim_reason}")
     else:
-        reasons.append(
-            f"Replay simulation confidence is low ({confidence}) — {sim_reason}"
-        )
+        reasons.append(f"Replay simulation confidence is low ({confidence}) — {sim_reason}")
 
     # ── Factor 3: fix resolution ──────────────────────────────
     if fix_applied:

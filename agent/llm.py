@@ -82,10 +82,10 @@ def propose_initial_fix(message: dict, validation: dict) -> str:
     prompt = f"""You are diagnosing a failed message from a dead-letter queue.
 
 Message:
-  event: {message.get('event')}
-  schema_version: {message.get('schema_version')}
-  payload: {message.get('payload')}
-  error: {message.get('error')}
+  event: {message.get("event")}
+  schema_version: {message.get("schema_version")}
+  payload: {message.get("payload")}
+  error: {message.get("error")}
 
 Validation failures:
 {error_lines}
