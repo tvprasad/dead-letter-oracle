@@ -2,6 +2,7 @@
 .env
 
 # Python
+.dlq/
 __pycache__/
 *.pyc
 *.pyo

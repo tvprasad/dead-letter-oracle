@@ -1,6 +1,6 @@
 PYTHON := C:/Users/AILabsByPrasad/AppData/Local/Python/bin/python.exe
 
-.PHONY: install run test lint
+.PHONY: install run test test-fast lint format check
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
@@ -15,4 +15,9 @@ test-fast:
 	$(PYTHON) -m pytest tests/ -v -x
 
 lint:
-	$(PYTHON) -m py_compile main.py mcp_server/*.py agent/*.py governance/*.py observability/*.py && echo "OK"
+	$(PYTHON) -m ruff check . --exclude .dlq
+
+format:
+	$(PYTHON) -m ruff check . --fix --exclude .dlq
+
+check: lint test

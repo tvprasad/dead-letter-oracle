@@ -1,8 +1,10 @@
 import json
-from .runtime import run_tool_calls
-from . import llm
+
 from governance.gatekeeper import evaluate as gatekeeper_evaluate
 from observability.blackbox import trace
+
+from . import llm
+from .runtime import run_tool_calls
 
 EXPECTED_SCHEMA = {
     "user_id": "string",
@@ -66,9 +68,7 @@ def run():
     print(f"  DLQ error:  {message.get('error', 'none')}")
     print(f"  Validation: {'passed' if validation['valid'] else 'FAILED'}")
     for e in field_errors:
-        print(
-            f"  Field:      '{e['field']}' expected {e['expected_type']}, got {e['actual_type']}"
-        )
+        print(f"  Field:      '{e['field']}' expected {e['expected_type']}, got {e['actual_type']}")
     print(SEP)
 
     # ── Step 4: LLM proposes initial fix ──────────────────────
@@ -107,9 +107,7 @@ def run():
     print("\n[ Agent ] Simulation confidence low -- asking LLM to revise...\n")
     revised_fix = llm.revise_recommendation(initial_fix, simulation)
     print(f"[ LLM  ] Revised recommendation:\n  {revised_fix}\n")
-    trace.record(
-        "Revised fix after low-confidence simulation", _truncate(revised_fix, 80)
-    )
+    trace.record("Revised fix after low-confidence simulation", _truncate(revised_fix, 80))
 
     # ── Step 7: replay.simulate — strong fix ─────────────────
     print("[ Agent ] Re-simulating with corrected fix...")

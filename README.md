@@ -74,7 +74,7 @@ Set `LLM_PROVIDER` in `.env`:
 ### Running tests
 
 ```bash
-C:/Users/AILabsByPrasad/AppData/Local/Python/bin/python.exe -m pytest tests/ -v
+python -m pytest tests/ -v
 ```
 
 ---
@@ -109,8 +109,8 @@ governance/      Gatekeeper — multi-factor replay evaluation
 observability/   BlackBox — structured reasoning trace
 data/            Sample DLQ message (local, no Kafka)
 adr/             Architecture Decision Records (ADR-001–007)
-tests/           19 unit + integration tests
-docs/            Architecture poster (poster.svg)
+tests/           22 unit + integration tests
+docs/            Architecture poster (poster.png)
 prompts/         Phased build prompts (ADR-driven)
 ```
 
@@ -121,6 +121,12 @@ prompts/         Phased build prompts (ADR-driven)
 Developed during the AI Hackathon submission period (Feb 2 – Apr 3, 2026).
 
 Built ADR-first: each phase locked decisions before implementation. The deliberate first-fix failure (confidence 0.28 → 0.91) is the core demo moment — it proves the agent reasons, not just formats.
+
+---
+
+## Author
+
+**Prasad Tiruveedi** — [linkedin.com/in/-prasad](https://www.linkedin.com/in/-prasad/) | VPL Solutions LLC
 
 ---
 

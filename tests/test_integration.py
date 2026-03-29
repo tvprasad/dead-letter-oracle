@@ -1,5 +1,5 @@
-from mcp_server.tools import validate_schema, simulate_replay
 from governance.gatekeeper import evaluate
+from mcp_server.tools import simulate_replay, validate_schema
 
 
 def test_gatekeeper_blocks_when_no_fix_applied():

@@ -1,7 +1,8 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from agent import llm
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from agent import llm
 
 SAMPLE_MESSAGE = {
     "event": "user_created",
@@ -29,9 +30,7 @@ SAMPLE_SIMULATION_HIGH = {
 
 
 def test_propose_initial_fix_returns_string():
-    with patch(
-        "agent.llm._chat", return_value="Check schema alignment in the producer."
-    ) as mock:
+    with patch("agent.llm._chat", return_value="Check schema alignment in the producer.") as mock:
         result = llm.propose_initial_fix(SAMPLE_MESSAGE, SAMPLE_VALIDATION_FAILED)
         assert isinstance(result, str)
         assert len(result) > 0
@@ -39,9 +38,7 @@ def test_propose_initial_fix_returns_string():
 
 
 def test_revise_recommendation_returns_string():
-    with patch(
-        "agent.llm._chat", return_value="Cast user_id to string at serialization."
-    ) as mock:
+    with patch("agent.llm._chat", return_value="Cast user_id to string at serialization.") as mock:
         result = llm.revise_recommendation("some initial fix", SAMPLE_SIMULATION_LOW)
         assert isinstance(result, str)
         assert len(result) > 0

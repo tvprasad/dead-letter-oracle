@@ -1,6 +1,7 @@
 import json
 import sys
-from .models import DLQMessage, FieldError, ValidateOutput, SimulateOutput
+
+from .models import DLQMessage, FieldError, SimulateOutput, ValidateOutput
 
 
 def read_message(file_path: str) -> DLQMessage:

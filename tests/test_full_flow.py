@@ -1,6 +1,5 @@
-from mcp_server.tools import read_message, validate_schema, simulate_replay
 from governance.gatekeeper import evaluate
-
+from mcp_server.tools import read_message, simulate_replay, validate_schema
 
 DLQ_FILE = "data/sample_dlq.json"
 
