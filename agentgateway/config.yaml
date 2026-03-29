@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+#
+# AgentGateway configuration for Dead Letter Oracle
+#
+# Exposes the three MCP tools as a governed, observable endpoint:
+#   dlq.read_message   -- reads a failed DLQ message from disk
+#   schema.validate    -- validates payload against expected schema
+#   replay.simulate    -- scores replay confidence (0.0-1.0)
+#
+# Usage:
+#   agentgateway -f agentgateway/config.yaml
+#
+# Endpoints once running:
+#   MCP proxy  -- http://localhost:3000/
+#   Web UI     -- http://localhost:15000/ui
+#   Playground -- http://localhost:15000/ui/playground/
+
+binds:
+  - port: 3000
+    listeners:
+      - routes:
+          - policies:
+              cors:
+                allowOrigins:
+                  - "*"
+                allowHeaders:
+                  - mcp-protocol-version
+                  - content-type
+                  - cache-control
+                exposeHeaders:
+                  - "Mcp-Session-Id"
+            backends:
+              - mcp:
+                  targets:
+                    - name: dead-letter-oracle
+                      stdio:
+                        cmd: python
+                        args: ["-m", "mcp_server"]

@@ -7,6 +7,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE-2.0.txt)
 [![Release](https://img.shields.io/github/v/release/tvprasad/dead-letter-oracle)](https://github.com/tvprasad/dead-letter-oracle/releases)
 [![MCP](https://img.shields.io/badge/protocol-MCP%20stdio-purple)](https://modelcontextprotocol.io)
+[![AgentGateway](https://img.shields.io/badge/gateway-AgentGateway-blue)](https://github.com/agentgateway/agentgateway)
 [![LLM](https://img.shields.io/badge/LLM-Azure%20OpenAI%20%7C%20Anthropic%20%7C%20Ollama-orange)](https://github.com/tvprasad/dead-letter-oracle#llm-provider)
 
 ![Dead Letter Oracle](docs/poster.png)
@@ -43,8 +44,11 @@ Dead Letter Oracle automates the full incident loop:
 ## Architecture
 
 ```
-User → CLI → Agent Runtime
-                ├── MCP Client ── stdio ── MCP Server
+                        AgentGateway (port 3000)
+                        └── MCP Proxy ── CORS, session, web UI
+                                │
+User → CLI → Agent Runtime      │
+                ├── MCP Client ─┘ stdio ── MCP Server
                 │                              ├── dlq.read_message
                 │                              ├── schema.validate
                 │                              └── replay.simulate
@@ -54,6 +58,30 @@ User → CLI → Agent Runtime
 ```
 
 The MCP protocol boundary is real. The agent and server run as separate processes communicating over stdio. Tools are deterministic. The LLM is the interpretation layer only.
+
+---
+
+## Running with AgentGateway
+
+Dead Letter Oracle ships with an [AgentGateway](https://github.com/agentgateway/agentgateway) configuration that exposes all three MCP tools behind a production-grade proxy with built-in CORS, session tracking, and a live web UI.
+
+```bash
+# Install agentgateway
+curl -sL https://agentgateway.dev/install | bash
+
+# Start the gateway (from repo root)
+agentgateway -f agentgateway/config.yaml
+```
+
+| Endpoint | URL |
+|----------|-----|
+| MCP proxy | http://localhost:3000/ |
+| Web UI | http://localhost:15000/ui |
+| Playground | http://localhost:15000/ui/playground/ |
+
+Open the Playground, connect to `http://localhost:3000/`, and invoke `dlq_read_message`, `schema_validate`, or `replay_simulate` directly from the browser. The Web UI shows live tool calls, routing, and session traces without any additional setup.
+
+The gateway config is at [`agentgateway/config.yaml`](agentgateway/config.yaml).
 
 ---
 
@@ -114,11 +142,11 @@ mcp_server/      MCP server + tools (deterministic)
 agent/           Agent runtime, planner, LLM integration
 governance/      Gatekeeper — multi-factor replay evaluation
 observability/   BlackBox — structured reasoning trace
+agentgateway/    AgentGateway config (MCP proxy, web UI, playground)
 data/            Sample DLQ message (local, no Kafka)
 adr/             Architecture Decision Records (ADR-001–007)
 tests/           22 unit + integration tests
 docs/            Architecture poster (poster.png)
-prompts/         Phased build prompts (ADR-driven)
 ```
 
 ---
