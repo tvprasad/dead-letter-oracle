@@ -13,10 +13,10 @@ Add `agent/api.py`: a thin FastAPI wrapper around `agent/planner.run_incident()`
 - Separation of concerns: `planner.run_incident()` returns a structured dict. CLI (`run()`) and HTTP (`/run-incident`) are two thin entry points over the same logic.
 - `main.py` stays as a five-line CLI entry point — not an orchestrator.
 - No ADR-003 violation: the three deterministic MCP tools remain unchanged. The agent API is a separate surface, not a new MCP tool.
-- AgentGateway unifies both surfaces (MCP tools + agent API) under one proxy, one config file.
+- The agent API runs independently on port 8000. AgentGateway continues to proxy only MCP tools (its native protocol).
 
 ## Consequences
 - The full governed incident loop is now testable via HTTP without a subprocess.
 - FastAPI adds `/docs` (Swagger UI) automatically — useful for integration testing.
-- Two processes must be running for the full gateway to work: `python -m agent.api` (port 8000) and `agentgateway -f agentgateway/config.yaml` (port 3000).
-- The MCP tool proxy continues to work independently if the agent API is not running.
+- Two independent processes: `python -m agent.api` (port 8000) and `agentgateway -f agentgateway/config.yaml` (port 3000). Each works independently.
+- AgentGateway HTTP backend routing (`http:` type) is not supported in the current release; the agent API is accessed directly on port 8000.

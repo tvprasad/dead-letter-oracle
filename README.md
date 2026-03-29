@@ -65,10 +65,10 @@ The MCP protocol boundary is real. The agent and server run as separate processe
 
 Dead Letter Oracle ships with an [AgentGateway](https://github.com/agentgateway/agentgateway) configuration that exposes both the MCP tools and the governed agent API behind a single proxy with built-in CORS, session tracking, and a live web UI.
 
-Two backends are unified under one gateway:
+Dead Letter Oracle exposes two surfaces:
 
-- **MCP tools** (deterministic, protocol-level) — `dlq_read_message`, `schema_validate`, `replay_simulate`
-- **Agent API** (full governed loop) — `POST /agent/run-incident` returns the complete 7-step reasoning trace and gatekeeper decision as JSON
+- **MCP tools** via AgentGateway (port 3000) — `dlq_read_message`, `schema_validate`, `replay_simulate`
+- **Agent API** (port 8000) — `POST /run-incident` runs the full 7-step governed pipeline and returns the reasoning trace and gatekeeper decision as JSON
 
 ```bash
 # Install agentgateway (Linux/macOS)
@@ -78,22 +78,22 @@ curl -sL https://agentgateway.dev/install | bash
 # then run:
 agentgateway-windows-amd64.exe -f agentgateway/config.yaml
 
-# Start the agent API (port 8000)
-python -m agent.api
-
-# Start the gateway (from repo root, Linux/macOS)
+# Start the gateway (MCP tools)
 agentgateway -f agentgateway/config.yaml
+
+# Start the agent API (full governed pipeline)
+python -m agent.api
 ```
 
 | Endpoint | URL |
 |----------|-----|
 | MCP proxy | http://localhost:3000/ |
-| Agent API | http://localhost:3000/agent/run-incident |
+| Agent API | http://localhost:8000/run-incident |
 | Agent docs | http://localhost:8000/docs |
 | Web UI | http://localhost:15000/ui |
 | Playground | http://localhost:15000/ui/playground/ |
 
-Open the Playground, connect to `http://localhost:3000/`, and invoke `dlq_read_message`, `schema_validate`, or `replay_simulate` directly from the browser. To test the full governed pipeline, `POST /agent/run-incident` with `{"file_path": "data/sample_dlq.json"}`.
+Open the Playground, connect to `http://localhost:3000/`, and invoke `dlq_read_message`, `schema_validate`, or `replay_simulate` directly from the browser. To run the full governed pipeline via HTTP, `POST http://localhost:8000/run-incident` with `{"file_path": "data/sample_dlq.json"}`.
 
 The gateway config is at [`agentgateway/config.yaml`](agentgateway/config.yaml).
 
