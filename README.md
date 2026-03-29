@@ -11,7 +11,7 @@
 
 ![Dead Letter Oracle](docs/poster.png)
 
-Dead Letter Oracle is an MCP-based agent that analyzes failed dead-letter queue messages, explains root causes, proposes and simulates fixes, and makes governed replay decisions — with a full reasoning trace.
+Dead Letter Oracle is an MCP-based agent that analyzes failed dead-letter queue messages, explains root causes, proposes and simulates fixes, and makes governed replay decisions, with a full reasoning trace.
 
 ---
 
@@ -32,7 +32,7 @@ Dead Letter Oracle automates the full incident loop:
 1. Reads the failed DLQ message via `dlq.read_message`
 2. Validates the payload via `schema.validate`
 3. LLM proposes an initial fix (high-level direction)
-4. `replay.simulate` tests the fix — returns confidence score
+4. `replay.simulate` tests the fix and returns a confidence score
 5. If confidence is low, LLM revises with a concrete, operational fix
 6. `replay.simulate` re-evaluates the revised fix
 7. Gatekeeper issues ALLOW / WARN / BLOCK with multi-factor reasoning
@@ -53,7 +53,7 @@ User → CLI → Agent Runtime
                 └── BlackBox    (reasoning trace)
 ```
 
-The MCP protocol boundary is real — the agent and server run as separate processes communicating over stdio. Tools are deterministic. The LLM is the interpretation layer only.
+The MCP protocol boundary is real. The agent and server run as separate processes communicating over stdio. Tools are deterministic. The LLM is the interpretation layer only.
 
 ---
 
@@ -76,7 +76,7 @@ Set `LLM_PROVIDER` in `.env`:
 | `anthropic` | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` |
 | `ollama` | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` |
 
-> Tested with Ollama (llama3) for local and air-gapped deployment — relevant for enterprise and federal environments where cloud API calls are restricted.
+> Tested with Ollama (llama3) for local and air-gapped deployment, relevant for enterprise and federal environments where cloud API calls are restricted.
 
 ### Running tests
 
@@ -98,7 +98,7 @@ python -m pytest tests/ -v
 
 ## Gatekeeper Factors
 
-Multi-factor evaluation — not a simple if/else:
+Multi-factor evaluation, not a simple if/else:
 
 - **Schema** — mismatch detected / resolved
 - **Simulation** — confidence score from `replay.simulate`
@@ -127,7 +127,7 @@ prompts/         Phased build prompts (ADR-driven)
 
 Developed during the AI Hackathon submission period (Feb 2 – Apr 3, 2026).
 
-Built ADR-first: each phase locked decisions before implementation. The deliberate first-fix failure (confidence 0.28 → 0.91) is the core demo moment — it proves the agent reasons, not just formats.
+Built ADR-first: each phase locked decisions before implementation. The deliberate first-fix failure (confidence 0.28 → 0.91) is the core demo moment. It proves the agent reasons, not just formats.
 
 ---
 
