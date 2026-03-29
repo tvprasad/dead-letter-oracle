@@ -10,7 +10,7 @@
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Report security issues by emailing **prasad@vplsolutions.com** with:
+Report security issues by emailing **contact@vplsolutions.com** with:
 
 - Description of the vulnerability
 - Steps to reproduce
