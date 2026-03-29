@@ -30,12 +30,12 @@ In event-driven systems, failed messages require manual debugging:
 
 Dead Letter Oracle automates the full incident loop:
 
-1. Reads the failed DLQ message via `dlq.read_message`
-2. Validates the payload via `schema.validate`
+1. Reads the failed DLQ message via `dlq_read_message`
+2. Validates the payload via `schema_validate`
 3. LLM proposes an initial fix (high-level direction)
-4. `replay.simulate` tests the fix and returns a confidence score
+4. `replay_simulate` tests the fix and returns a confidence score
 5. If confidence is low, LLM revises with a concrete, operational fix
-6. `replay.simulate` re-evaluates the revised fix
+6. `replay_simulate` re-evaluates the revised fix
 7. Gatekeeper issues ALLOW / WARN / BLOCK with multi-factor reasoning
 8. BlackBox renders the full 7-step reasoning trace
 
@@ -151,7 +151,7 @@ python -m pytest tests/ -v
 Multi-factor evaluation, not a simple if/else:
 
 - **Schema** — mismatch detected / resolved
-- **Simulation** — confidence score from `replay.simulate`
+- **Simulation** — confidence score from `replay_simulate`
 - **Fix** — whether a confirmed fix was applied
 - **Environment** — prod requires higher confidence threshold
 
@@ -166,7 +166,7 @@ governance/      Gatekeeper — multi-factor replay evaluation
 observability/   BlackBox — structured reasoning trace
 agentgateway/    AgentGateway config (MCP proxy + agent API, web UI, playground)
 data/            Sample DLQ message (local, no Kafka)
-adr/             Architecture Decision Records (ADR-001 through ADR-008)
+adr/             Architecture Decision Records (ADR-001 through ADR-009)
 tests/           22 unit + integration tests
 docs/            Architecture poster (poster.png)
 ```
