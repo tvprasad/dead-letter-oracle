@@ -10,7 +10,7 @@ Dead Letter Oracle exposes three MCP tools over stdio: `dlq.read_message`, `sche
 1. **Discoverability** — external clients, browser-based tools, and other agents cannot invoke the MCP tools without spawning a subprocess directly.
 2. **Observability** — there is no out-of-the-box way to inspect live tool calls, routing, or session state without adding instrumentation to the server itself.
 
-The hackathon judges evaluate Open Source Integration (40 of 100 points), with eligible projects including agentgateway, kagent, and agentregistry. AgentGateway is a Linux Foundation project specifically designed as an MCP proxy.
+AgentGateway is a Linux Foundation project specifically designed as an MCP proxy, with native stdio transport support and a built-in web UI for live tool inspection.
 
 ## Decision
 
