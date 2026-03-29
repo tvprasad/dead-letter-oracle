@@ -20,11 +20,11 @@ Add an [AgentGateway](https://github.com/agentgateway/agentgateway) configuratio
 
 **AgentGateway over kagent:** Kagent requires a Kubernetes cluster and custom resource definitions. Dead Letter Oracle is a local demo-first project (ADR-006). The infrastructure overhead would contradict the demo-first constraint.
 
-**AgentGateway over agentregistry:** AgentRegistry is a discovery/publishing layer. It adds value for teams sharing MCP servers at scale, but does not add observable, governed routing to the demo flow. AgentGateway directly enhances what judges see in a 2-minute video.
+**AgentGateway over agentregistry:** AgentRegistry is a discovery/publishing layer. It adds value for teams sharing MCP servers at scale, but does not add observable, governed routing to the runtime flow.
 
 **No code changes:** The existing `python -m mcp_server` stdio entrypoint is used as-is. AgentGateway spawns it as a child process. The integration is purely configuration — zero risk to the existing implementation.
 
-**Demo value:** AgentGateway exposes a web UI at `localhost:15000/ui` and a playground at `/ui/playground/`. Judges can invoke tools in a browser without any client code. This strengthens the Product Readiness score alongside the Open Source Integration score.
+**Browser access:** AgentGateway exposes a web UI at `localhost:15000/ui` and a playground at `/ui/playground/`. Any client can invoke tools in a browser without additional client code.
 
 ## Configuration
 
