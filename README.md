@@ -2,6 +2,13 @@
 
 **Governed MCP Agent for DLQ Incident Resolution**
 
+[![CI](https://github.com/tvprasad/dead-letter-oracle/actions/workflows/ci.yml/badge.svg)](https://github.com/tvprasad/dead-letter-oracle/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE-2.0.txt)
+[![Release](https://img.shields.io/github/v/release/tvprasad/dead-letter-oracle)](https://github.com/tvprasad/dead-letter-oracle/releases)
+[![MCP](https://img.shields.io/badge/protocol-MCP%20stdio-purple)](https://modelcontextprotocol.io)
+[![LLM](https://img.shields.io/badge/LLM-Azure%20OpenAI%20%7C%20Anthropic%20%7C%20Ollama-orange)](https://github.com/tvprasad/dead-letter-oracle#llm-provider)
+
 ![Dead Letter Oracle](docs/poster.png)
 
 Dead Letter Oracle is an MCP-based agent that analyzes failed dead-letter queue messages, explains root causes, proposes and simulates fixes, and makes governed replay decisions — with a full reasoning trace.
