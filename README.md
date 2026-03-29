@@ -63,23 +63,37 @@ The MCP protocol boundary is real. The agent and server run as separate processe
 
 ## Running with AgentGateway
 
-Dead Letter Oracle ships with an [AgentGateway](https://github.com/agentgateway/agentgateway) configuration that exposes all three MCP tools behind a production-grade proxy with built-in CORS, session tracking, and a live web UI.
+Dead Letter Oracle ships with an [AgentGateway](https://github.com/agentgateway/agentgateway) configuration that exposes both the MCP tools and the governed agent API behind a single proxy with built-in CORS, session tracking, and a live web UI.
+
+Two backends are unified under one gateway:
+
+- **MCP tools** (deterministic, protocol-level) — `dlq_read_message`, `schema_validate`, `replay_simulate`
+- **Agent API** (full governed loop) — `POST /agent/run-incident` returns the complete 7-step reasoning trace and gatekeeper decision as JSON
 
 ```bash
-# Install agentgateway
+# Install agentgateway (Linux/macOS)
 curl -sL https://agentgateway.dev/install | bash
 
-# Start the gateway (from repo root)
+# Windows: download binary from https://github.com/agentgateway/agentgateway/releases
+# then run:
+agentgateway-windows-amd64.exe -f agentgateway/config.yaml
+
+# Start the agent API (port 8000)
+python -m agent.api
+
+# Start the gateway (from repo root, Linux/macOS)
 agentgateway -f agentgateway/config.yaml
 ```
 
 | Endpoint | URL |
 |----------|-----|
 | MCP proxy | http://localhost:3000/ |
+| Agent API | http://localhost:3000/agent/run-incident |
+| Agent docs | http://localhost:8000/docs |
 | Web UI | http://localhost:15000/ui |
 | Playground | http://localhost:15000/ui/playground/ |
 
-Open the Playground, connect to `http://localhost:3000/`, and invoke `dlq_read_message`, `schema_validate`, or `replay_simulate` directly from the browser. The Web UI shows live tool calls, routing, and session traces without any additional setup.
+Open the Playground, connect to `http://localhost:3000/`, and invoke `dlq_read_message`, `schema_validate`, or `replay_simulate` directly from the browser. To test the full governed pipeline, `POST /agent/run-incident` with `{"file_path": "data/sample_dlq.json"}`.
 
 The gateway config is at [`agentgateway/config.yaml`](agentgateway/config.yaml).
 
@@ -139,10 +153,10 @@ Multi-factor evaluation, not a simple if/else:
 
 ```
 mcp_server/      MCP server + tools (deterministic)
-agent/           Agent runtime, planner, LLM integration
+agent/           Agent runtime, planner, LLM integration, HTTP API
 governance/      Gatekeeper — multi-factor replay evaluation
 observability/   BlackBox — structured reasoning trace
-agentgateway/    AgentGateway config (MCP proxy, web UI, playground)
+agentgateway/    AgentGateway config (MCP proxy + agent API, web UI, playground)
 data/            Sample DLQ message (local, no Kafka)
 adr/             Architecture Decision Records (ADR-001 through ADR-008)
 tests/           22 unit + integration tests

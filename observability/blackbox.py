@@ -17,6 +17,9 @@ class BlackBox:
         self._counter += 1
         self._entries.append(TraceEntry(self._counter, summary, detail))
 
+    def entries(self) -> list[dict]:
+        return [{"step": e.step, "summary": e.summary, "detail": e.detail} for e in self._entries]
+
     def render(self) -> None:
         width = 56
         print("=" * width)
@@ -38,7 +41,3 @@ class BlackBox:
                 if current.strip():
                     print(current.rstrip())
         print("=" * width)
-
-
-# Module-level singleton used across planner
-trace = BlackBox()

@@ -2,16 +2,27 @@
 #
 # AgentGateway configuration for Dead Letter Oracle
 #
-# Exposes the three MCP tools as a governed, observable endpoint:
-#   dlq.read_message   -- reads a failed DLQ message from disk
-#   schema.validate    -- validates payload against expected schema
-#   replay.simulate    -- scores replay confidence (0.0-1.0)
+# Two backends behind one proxy:
+#
+#   MCP tools (port 3000)       -- deterministic, protocol-level tools
+#     dlq.read_message          -- reads a failed DLQ message from disk
+#     schema.validate           -- validates payload against expected schema
+#     replay.simulate           -- scores replay confidence (0.0-1.0)
+#
+#   Agent API (port 8000)       -- governed incident loop (HTTP/REST)
+#     POST /run-incident        -- full 7-step pipeline + BlackBox trace
+#     GET  /health              -- liveness check
 #
 # Usage:
+#   # Start agent API first
+#   python -m agent.api
+#
+#   # Then start the gateway
 #   agentgateway -f agentgateway/config.yaml
 #
 # Endpoints once running:
 #   MCP proxy  -- http://localhost:3000/
+#   Agent API  -- http://localhost:3000/agent/
 #   Web UI     -- http://localhost:15000/ui
 #   Playground -- http://localhost:15000/ui/playground/
 
@@ -19,6 +30,23 @@ binds:
   - port: 3000
     listeners:
       - routes:
+          - match:
+              prefix: /agent
+            policies:
+              cors:
+                allowOrigins:
+                  - "*"
+                allowHeaders:
+                  - content-type
+                  - cache-control
+                exposeHeaders: []
+            backends:
+              - http:
+                  targets:
+                    - name: dead-letter-oracle-agent
+                      host: localhost
+                      port: 8000
+
           - policies:
               cors:
                 allowOrigins:

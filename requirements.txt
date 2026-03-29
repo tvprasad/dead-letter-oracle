@@ -1,6 +1,7 @@
 mcp==1.26.0
 openai==2.18.0
 anthropic==0.86.0
+fastapi==0.115.12
 pydantic==2.12.5
 python-dotenv==1.2.1
 anyio==4.12.1

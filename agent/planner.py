@@ -1,7 +1,7 @@
 import json
 
 from governance.gatekeeper import evaluate as gatekeeper_evaluate
-from observability.blackbox import trace
+from observability.blackbox import BlackBox
 
 from . import llm
 from .runtime import run_tool_calls
@@ -25,11 +25,17 @@ STRONG_FIX_PAYLOAD = {
 SEP = "=" * 56
 
 
-def run():
-    print("\n[ Dead Letter Oracle ] Starting...\n")
+def run_incident(file_path: str = DLQ_FILE) -> dict:
+    """
+    Execute the full governed incident loop and return a structured result.
+
+    Returns a dict with: message, validation, simulations, gatekeeper, trace.
+    Caller decides how to surface the output (HTTP response, CLI print, test assertion).
+    """
+    trace = BlackBox()
 
     # ── Step 1: read DLQ message ──────────────────────────────
-    results = run_tool_calls([("dlq_read_message", {"file_path": DLQ_FILE})])
+    results = run_tool_calls([("dlq_read_message", {"file_path": file_path})])
     message = json.loads(results[0]["result"])
     trace.record(
         "Read message from DLQ",
@@ -60,25 +66,11 @@ def run():
     else:
         trace.record("Schema validation passed")
 
-    # ── Step 3: print diagnosis ───────────────────────────────
-    print(SEP)
-    print("Diagnosis:")
-    print(f"  Event:      {message['event']}")
-    print(f"  Schema ver: {message['schema_version']}")
-    print(f"  DLQ error:  {message.get('error', 'none')}")
-    print(f"  Validation: {'passed' if validation['valid'] else 'FAILED'}")
-    for e in field_errors:
-        print(f"  Field:      '{e['field']}' expected {e['expected_type']}, got {e['actual_type']}")
-    print(SEP)
-
-    # ── Step 4: LLM proposes initial fix ──────────────────────
-    print("\n[ Agent ] Asking LLM for initial fix proposal...")
+    # ── Step 3: LLM proposes initial fix ─────────────────────
     initial_fix = llm.propose_initial_fix(message, validation)
-    print(f"\n[ LLM  ] Initial fix proposal:\n  {initial_fix}\n")
     trace.record("Proposed initial fix", _truncate(initial_fix, 80))
 
-    # ── Step 5: replay.simulate — weak fix ───────────────────
-    print("[ Agent ] Simulating replay with proposed fix...")
+    # ── Step 4: replay.simulate — weak fix ───────────────────
     results = run_tool_calls(
         [
             (
@@ -90,27 +82,17 @@ def run():
             )
         ]
     )
-    simulation = json.loads(results[0]["result"])
+    simulation1 = json.loads(results[0]["result"])
     trace.record(
-        f"Simulation result: {simulation['success_likelihood']} confidence ({simulation['confidence']})",
-        simulation["reason"],
+        f"Simulation result: {simulation1['success_likelihood']} confidence ({simulation1['confidence']})",
+        simulation1["reason"],
     )
 
-    print(SEP)
-    print("Simulation result:")
-    print(f"  Likelihood: {simulation['success_likelihood']}")
-    print(f"  Confidence: {simulation['confidence']}")
-    print(f"  Reason:     {simulation['reason']}")
-    print(SEP)
-
-    # ── Step 6: LLM revises ───────────────────────────────────
-    print("\n[ Agent ] Simulation confidence low -- asking LLM to revise...\n")
-    revised_fix = llm.revise_recommendation(initial_fix, simulation)
-    print(f"[ LLM  ] Revised recommendation:\n  {revised_fix}\n")
+    # ── Step 5: LLM revises ───────────────────────────────────
+    revised_fix = llm.revise_recommendation(initial_fix, simulation1)
     trace.record("Revised fix after low-confidence simulation", _truncate(revised_fix, 80))
 
-    # ── Step 7: replay.simulate — strong fix ─────────────────
-    print("[ Agent ] Re-simulating with corrected fix...")
+    # ── Step 6: replay.simulate — strong fix ─────────────────
     results = run_tool_calls(
         [
             (
@@ -128,16 +110,7 @@ def run():
         simulation2["reason"],
     )
 
-    print(SEP)
-    print("Final simulation result:")
-    print(f"  Likelihood: {simulation2['success_likelihood']}")
-    print(f"  Confidence: {simulation2['confidence']}")
-    print(f"  Reason:     {simulation2['reason']}")
-    print(SEP)
-    print("\n[ Agent ] Reasoning loop complete.\n")
-
-    # ── Step 8: Gatekeeper ────────────────────────────────────
-    print("[ Gatekeeper ] Evaluating replay safety...\n")
+    # ── Step 7: Gatekeeper ────────────────────────────────────
     gate = gatekeeper_evaluate(
         validation=validation,
         simulation=simulation2,
@@ -148,21 +121,101 @@ def run():
         f"confidence={gate.confidence} | {gate.reasons[0]}",
     )
 
-    icons = {"ALLOW": "[OK]  ", "WARN": "[WARN]", "BLOCK": "[STOP]"}
-    icon = icons.get(gate.decision, "      ")
+    return {
+        "message": message,
+        "validation": validation,
+        "initial_fix": initial_fix,
+        "simulation1": simulation1,
+        "revised_fix": revised_fix,
+        "simulation2": simulation2,
+        "gatekeeper": {
+            "decision": gate.decision,
+            "confidence": gate.confidence,
+            "reasons": gate.reasons,
+        },
+        "trace": trace.entries(),
+    }
+
+
+def run():
+    """CLI entry point. Runs the incident loop and prints results."""
+    print("\n[ Dead Letter Oracle ] Starting...\n")
+
+    result = run_incident()
+
+    message = result["message"]
+    validation = result["validation"]
+    field_errors = validation.get("errors", [])
+    simulation1 = result["simulation1"]
+    simulation2 = result["simulation2"]
+    gate = result["gatekeeper"]
+
+    # ── Diagnosis ─────────────────────────────────────────────
+    print(SEP)
+    print("Diagnosis:")
+    print(f"  Event:      {message['event']}")
+    print(f"  Schema ver: {message['schema_version']}")
+    print(f"  DLQ error:  {message.get('error', 'none')}")
+    print(f"  Validation: {'passed' if validation['valid'] else 'FAILED'}")
+    for e in field_errors:
+        print(f"  Field:      '{e['field']}' expected {e['expected_type']}, got {e['actual_type']}")
+    print(SEP)
+
+    print(f"\n[ LLM  ] Initial fix proposal:\n  {result['initial_fix']}\n")
 
     print(SEP)
-    print(f"Gatekeeper Decision: {icon} {gate.decision}")
-    print(f"Confidence:          {gate.confidence}")
+    print("Simulation result (initial fix):")
+    print(f"  Likelihood: {simulation1['success_likelihood']}")
+    print(f"  Confidence: {simulation1['confidence']}")
+    print(f"  Reason:     {simulation1['reason']}")
+    print(SEP)
+
+    print(f"\n[ LLM  ] Revised recommendation:\n  {result['revised_fix']}\n")
+
+    print(SEP)
+    print("Final simulation result:")
+    print(f"  Likelihood: {simulation2['success_likelihood']}")
+    print(f"  Confidence: {simulation2['confidence']}")
+    print(f"  Reason:     {simulation2['reason']}")
+    print(SEP)
+    print("\n[ Agent ] Reasoning loop complete.\n")
+
+    icons = {"ALLOW": "[OK]  ", "WARN": "[WARN]", "BLOCK": "[STOP]"}
+    icon = icons.get(gate["decision"], "      ")
+
+    print(SEP)
+    print(f"Gatekeeper Decision: {icon} {gate['decision']}")
+    print(f"Confidence:          {gate['confidence']}")
     print("Reasons:")
-    for r in gate.reasons:
+    for r in gate["reasons"]:
         print(f"  - {r}")
     print(SEP)
 
     # ── BlackBox trace ────────────────────────────────────────
     print()
-    trace.render()
+    _print_trace(result["trace"])
     print()
+
+
+def _print_trace(entries: list[dict]) -> None:
+    width = 56
+    print("=" * width)
+    print("BlackBox Trace")
+    print("-" * width)
+    for e in entries:
+        print(f"{e['step']:>2}. {e['summary']}")
+        if e.get("detail"):
+            words = e["detail"].split()
+            current = "      "
+            for word in words:
+                if len(current) + len(word) + 1 > 56:
+                    print(current.rstrip())
+                    current = "      " + word + " "
+                else:
+                    current += word + " "
+            if current.strip():
+                print(current.rstrip())
+    print("=" * width)
 
 
 def _truncate(text: str, max_len: int) -> str:
