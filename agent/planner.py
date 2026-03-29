@@ -1,144 +1,10 @@
-import json
-
-from governance.gatekeeper import evaluate as gatekeeper_evaluate
-from observability.blackbox import BlackBox
-
-from . import llm
-from .runtime import run_tool_calls
-
-EXPECTED_SCHEMA = {
-    "user_id": "string",
-    "email": "string",
-}
-
-DLQ_FILE = "data/sample_dlq.json"
-
-WEAK_FIX_PAYLOAD = {
-    "user_id": 12345,  # still an int — simulation will flag this
-    "email": "test@example.com",
-}
-STRONG_FIX_PAYLOAD = {
-    "user_id": "12345",  # coerced to string — simulation passes
-    "email": "test@example.com",
-}
+from mcp_server.tools import run_incident
 
 SEP = "=" * 56
 
 
-def run_incident(file_path: str = DLQ_FILE) -> dict:
-    """
-    Execute the full governed incident loop and return a structured result.
-
-    Returns a dict with: message, validation, simulations, gatekeeper, trace.
-    Caller decides how to surface the output (HTTP response, CLI print, test assertion).
-    """
-    trace = BlackBox()
-
-    # ── Step 1: read DLQ message ──────────────────────────────
-    results = run_tool_calls([("dlq_read_message", {"file_path": file_path})])
-    message = json.loads(results[0]["result"])
-    trace.record(
-        "Read message from DLQ",
-        f"event={message['event']} schema_version={message['schema_version']}",
-    )
-
-    # ── Step 2: validate schema ───────────────────────────────
-    results = run_tool_calls(
-        [
-            (
-                "schema_validate",
-                {
-                    "payload": message["payload"],
-                    "expected_schema": EXPECTED_SCHEMA,
-                },
-            )
-        ]
-    )
-    validation = json.loads(results[0]["result"])
-
-    field_errors = validation.get("errors", [])
-    if field_errors:
-        e = field_errors[0]
-        trace.record(
-            "Detected schema mismatch",
-            f"'{e['field']}' expected {e['expected_type']}, got {e['actual_type']}",
-        )
-    else:
-        trace.record("Schema validation passed")
-
-    # ── Step 3: LLM proposes initial fix ─────────────────────
-    initial_fix = llm.propose_initial_fix(message, validation)
-    trace.record("Proposed initial fix", _truncate(initial_fix, 80))
-
-    # ── Step 4: replay.simulate — weak fix ───────────────────
-    results = run_tool_calls(
-        [
-            (
-                "replay_simulate",
-                {
-                    "original_message": message,
-                    "proposed_fix": {"payload": WEAK_FIX_PAYLOAD},
-                },
-            )
-        ]
-    )
-    simulation1 = json.loads(results[0]["result"])
-    trace.record(
-        f"Simulation result: {simulation1['success_likelihood']} confidence ({simulation1['confidence']})",
-        simulation1["reason"],
-    )
-
-    # ── Step 5: LLM revises ───────────────────────────────────
-    revised_fix = llm.revise_recommendation(initial_fix, simulation1)
-    trace.record("Revised fix after low-confidence simulation", _truncate(revised_fix, 80))
-
-    # ── Step 6: replay.simulate — strong fix ─────────────────
-    results = run_tool_calls(
-        [
-            (
-                "replay_simulate",
-                {
-                    "original_message": message,
-                    "proposed_fix": {"payload": STRONG_FIX_PAYLOAD},
-                },
-            )
-        ]
-    )
-    simulation2 = json.loads(results[0]["result"])
-    trace.record(
-        f"Re-simulation result: {simulation2['success_likelihood']} confidence ({simulation2['confidence']})",
-        simulation2["reason"],
-    )
-
-    # ── Step 7: Gatekeeper ────────────────────────────────────
-    gate = gatekeeper_evaluate(
-        validation=validation,
-        simulation=simulation2,
-        fix_applied=(simulation2["confidence"] >= 0.80),
-    )
-    trace.record(
-        f"Gatekeeper decision: {gate.decision}",
-        f"confidence={gate.confidence} | {gate.reasons[0]}",
-    )
-
-    return {
-        "message": message,
-        "validation": validation,
-        "initial_fix": initial_fix,
-        "simulation1": simulation1,
-        "revised_fix": revised_fix,
-        "simulation2": simulation2,
-        "gatekeeper": {
-            "decision": gate.decision,
-            "confidence": gate.confidence,
-            "reasons": gate.reasons,
-        },
-        "trace": trace.entries(),
-    }
-
-
 def run():
-    """CLI entry point. Runs the incident loop and prints results."""
+    """CLI entry point. Runs the governed incident loop and prints results."""
     print("\n[ Dead Letter Oracle ] Starting...\n")
 
     result = run_incident()
@@ -150,7 +16,7 @@ def run():
     simulation2 = result["simulation2"]
     gate = result["gatekeeper"]
 
-    # ── Diagnosis ─────────────────────────────────────────────
+    # Diagnosis
     print(SEP)
     print("Diagnosis:")
     print(f"  Event:      {message['event']}")
@@ -191,7 +57,6 @@ def run():
         print(f"  - {r}")
     print(SEP)
 
-    # ── BlackBox trace ────────────────────────────────────────
     print()
     _print_trace(result["trace"])
     print()
@@ -216,8 +81,3 @@ def _print_trace(entries: list[dict]) -> None:
             if current.strip():
                 print(current.rstrip())
     print("=" * width)
-
-
-def _truncate(text: str, max_len: int) -> str:
-    text = text.replace("\n", " ")
-    return text[:max_len] + "..." if len(text) > max_len else text

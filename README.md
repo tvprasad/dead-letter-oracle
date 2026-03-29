@@ -44,20 +44,27 @@ Dead Letter Oracle automates the full incident loop:
 ## Architecture
 
 ```
-                        AgentGateway (port 3000)
-                        └── MCP Proxy ── CORS, session, web UI
-                                │
-User → CLI → Agent Runtime      │
-                ├── MCP Client ─┘ stdio ── MCP Server
-                │                              ├── dlq.read_message
-                │                              ├── schema.validate
-                │                              └── replay.simulate
-                ├── LLM  (propose → simulate → revise)
-                ├── Gatekeeper  (ALLOW / WARN / BLOCK)
-                └── BlackBox    (reasoning trace)
+User → CLI (main.py)
+     → Agent API (POST /run-incident, port 8000)
+     → AgentGateway Playground (agent_run_incident tool, port 3000)
+                │
+                ▼
+        AgentGateway (port 3000)
+        CORS, session tracking, web UI
+                │
+                ▼
+          MCP Server (mcp_server/)
+          ├── dlq_read_message       deterministic
+          ├── schema_validate        deterministic
+          ├── replay_simulate        deterministic
+          └── agent_run_incident     orchestration
+                    ├── calls above tool functions (in-process)
+                    ├── LLM  (propose → simulate → revise)
+                    ├── Gatekeeper  (ALLOW / WARN / BLOCK)
+                    └── BlackBox    (reasoning trace)
 ```
 
-The MCP protocol boundary is real. The agent and server run as separate processes communicating over stdio. Tools are deterministic. The LLM is the interpretation layer only.
+All four tools are accessible via AgentGateway at port 3000. The MCP protocol boundary is real. The three deterministic tools have no LLM dependency. `agent_run_incident` composes them with LLM interpretation and governance — one protocol surface, all capabilities.
 
 ---
 
@@ -130,11 +137,12 @@ python -m pytest tests/ -v
 
 ## MCP Tools
 
-| Tool | Input | Output |
-|------|-------|--------|
-| `dlq.read_message` | `file_path` | Parsed DLQ message |
-| `schema.validate` | `payload`, `expected_schema` | `valid`, `errors[]` |
-| `replay.simulate` | `original_message`, `proposed_fix` | `confidence`, `success_likelihood`, `reason` |
+| Tool | Type | Input | Output |
+|------|------|-------|--------|
+| `dlq_read_message` | Deterministic | `file_path` | Parsed DLQ message |
+| `schema_validate` | Deterministic | `payload`, `expected_schema` | `valid`, `errors[]` |
+| `replay_simulate` | Deterministic | `original_message`, `proposed_fix` | `confidence`, `success_likelihood`, `reason` |
+| `agent_run_incident` | Orchestration | `file_path` | Gatekeeper decision + 7-step BlackBox trace |
 
 ---
 

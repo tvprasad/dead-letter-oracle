@@ -1,4 +1,6 @@
-from mcp_server.tools import read_message, simulate_replay, validate_schema
+from unittest.mock import patch
+
+from mcp_server.tools import read_message, run_incident, simulate_replay, validate_schema
 
 DLQ_FILE = "data/sample_dlq.json"
 
@@ -61,3 +63,14 @@ def test_simulate_replay_low_confidence_for_missing_payload():
     result = simulate_replay(message, fix)
     assert result.success_likelihood == "low"
     assert result.confidence < 0.2
+
+
+def test_run_incident_returns_governed_result():
+    with patch("agent.llm._chat", side_effect=["Cast user_id to string.", "Set user_id='12345'."]):
+        result = run_incident(DLQ_FILE)
+
+    assert result["gatekeeper"]["decision"] in ("ALLOW", "WARN", "BLOCK")
+    assert result["simulation1"]["confidence"] < 0.5
+    assert result["simulation2"]["confidence"] > 0.8
+    assert len(result["trace"]) == 7
+    assert result["gatekeeper"]["decision"] == "WARN"

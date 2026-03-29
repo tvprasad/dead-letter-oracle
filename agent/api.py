@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from .planner import run_incident
+from mcp_server.tools import run_incident
 
 app = FastAPI(title="Dead Letter Oracle — Agent API", version="1.0.0")
 
@@ -14,9 +14,8 @@ class IncidentRequest(BaseModel):
 @app.post("/run-incident")
 def run_incident_endpoint(request: IncidentRequest):
     """
-    Run the full governed incident loop:
-      read -> validate -> propose -> simulate -> revise -> simulate -> govern -> trace
-    Returns a structured result with gatekeeper decision and BlackBox trace.
+    Run the full governed incident loop via HTTP.
+    Delegates to agent_run_incident MCP tool (mcp_server/tools.py).
     """
     return run_incident(request.file_path)
 
