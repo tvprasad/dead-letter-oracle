@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-“MCP-style” abstractions were judged as insufficiently defensible in Q&A. A custom tool registry risks looking like function-calling dressed up as protocol.
+A custom tool registry built on top of plain function calls provides no protocol guarantee. The boundary between agent and tools would be an implementation detail, not a contract.
 
 ## Decision
 Implement a **real MCP server** over **stdio transport** and a true MCP client that invokes tools across the protocol boundary.
@@ -16,7 +16,7 @@ This makes MCP:
 - defensible
 - category-aligned
 
-Stdio is the simplest credible transport for hackathon scope.
+Stdio is the simplest transport that satisfies the real protocol boundary requirement without additional infrastructure.
 
 ## Consequences
-All tools exposed in the demo must be callable through the MCP interface, not by direct in-process calls.
+All tools must be callable through the MCP interface, not by direct in-process calls.

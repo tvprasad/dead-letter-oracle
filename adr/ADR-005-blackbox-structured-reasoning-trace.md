@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-Raw logs are unreadable in a 2-minute demo. Judges want to understand what the agent did and why.
+Raw logs expose implementation noise — tool call parameters, serialization details, timestamps — without surfacing the reasoning chain. Operators need to understand what the agent decided and why, not how the runtime executed it.
 
 ## Decision
 Implement BlackBox as a structured, human-readable reasoning trace showing:
@@ -15,7 +15,7 @@ Implement BlackBox as a structured, human-readable reasoning trace showing:
 - final decision
 
 ## Rationale
-This gives the project a memorable explainability moment and strengthens trust.
+Structured output makes the agent's reasoning auditable and verifiable without reading raw logs.
 
 ## Consequences
-BlackBox output must be demo-friendly, concise, and readable at a glance.
+BlackBox output must be concise and human-readable without additional tooling.
