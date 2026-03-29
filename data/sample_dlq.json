@@ -1,0 +1,9 @@
+{
+  "event": "user_created",
+  "schema_version": 2,
+  "payload": {
+    "user_id": 12345,
+    "email": "test@example.com"
+  },
+  "error": "Schema validation failed"
+}

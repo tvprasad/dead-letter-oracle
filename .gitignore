@@ -1,0 +1,29 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Build scaffolding — not part of the submission
+prompts/
+examples/
+demo/
+BUILD_SPRINT_PLAN.md
+PROJECT_PLAN.md
+p1
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
